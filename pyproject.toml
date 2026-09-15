@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rulefield"
+version = "0.1.0"
+description = "轻量规则化文本字段抽取引擎：模板驱动的规则抽取，非 RAG、无 LLM、零外部服务"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "qiutuan" }]
+keywords = ["extraction", "regex", "template", "cli", "text"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typer>=0.12",
+    "PyYAML>=6.0",
+    "charset-normalizer>=3.0",
+    "regex>=2024.5.15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+rulefield = "rulefield.cli.app:main"
+
+[tool.setuptools.packages.find]
+include = ["rulefield*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["rulefield", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+pythonpath = ["."]
+markers = [
+    "accept: 验收标准自测用例（Phase 7）",
+    "slow: 大文件/性能用例（默认跳过，可用 -m slow 显式运行）",
+    "integration: 集成测试",
+]
