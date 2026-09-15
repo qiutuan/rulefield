@@ -14,6 +14,8 @@
   - `docs/template-schema.md` — 模板 YAML Schema 设计定稿。
   - `docs/implementation-plan.md` — 分阶段实现计划（Phase 0–7）。
   - `docs/architecture-diagram.html` — 架构可视化图。
+- 设计澄清（R1–R5）与设计决策记录：
+  - `docs/adr.md` — ADR-001..005（记录模型两级收敛 / 正则超时语义 / 热加载任务快照 / 去重作用域 / fallback 策略语义）。
 
 ### 待办（进入编码阶段后逐项落实）
 
