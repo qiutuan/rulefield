@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rulefield 架构图（v0.1.0 设计）</title>
+<style>
+  body { margin: 0; padding: 24px; background: #F4F3EE; font-family: 'Roboto', 'PingFang SC', 'Segoe UI', Arial, sans-serif; color: #1A1B1C; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  svg { width: 100%; height: auto; display: block; background: #F4F3EE; border-radius: 16px; }
+  .note { font-size: 12px; color: #6B7280; margin-top: 10px; line-height: 1.6; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; font-size: 12.5px; color: #2F3B43; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 1240 1000" role="img" aria-label="rulefield 分层架构图">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#5B7A8E"/>
+    </marker>
+    <marker id="arrDash" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#9AA7B0"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="30" y="38" font-size="21" font-weight="700" fill="#1A1B1C">rulefield — 轻量规则化文本字段抽取引擎 · 架构总览</text>
+  <text x="30" y="60" font-size="13" fill="#6B7280">非 RAG / 无 LLM / 零外部服务 · 模板驱动 · 离线运行 · 设计稿 v0.1.0</text>
+
+  <!-- 指标卡 -->
+  <g>
+    <rect x="940" y="22" width="270" height="72" rx="12" fill="#FFFFFF" stroke="#E4E3DD"/>
+    <text x="958" y="44" font-size="12" fill="#6B7280">目标指标</text>
+    <text x="958" y="64" font-size="13.5" font-weight="600" fill="#1A1B1C">内存 &lt;100MB · 单核 10万行/分</text>
+    <text x="958" y="82" font-size="13.5" font-weight="600" fill="#1A1B1C">10MB 日志 &lt;10s · 零外部依赖</text>
+  </g>
+
+  <!-- 带1：CLI 层 -->
+  <text x="30" y="110" font-size="13" font-weight="600" fill="#5B7A8E">CLI 层 · 命令（M6）</text>
+  <rect x="30" y="122" width="880" height="62" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="13.5" font-weight="600" text-anchor="middle">
+    <rect x="46" y="136" width="126" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="109" y="158" fill="#1A1B1C">extract</text>
+    <rect x="186" y="136" width="126" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="249" y="158" fill="#1A1B1C">test 工作台</text>
+    <rect x="326" y="136" width="126" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="389" y="158" fill="#1A1B1C">validate</text>
+    <rect x="466" y="136" width="126" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="529" y="158" fill="#1A1B1C">benchmark</text>
+    <rect x="606" y="136" width="126" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="669" y="158" fill="#1A1B1C">diff</text>
+    <rect x="746" y="136" width="148" height="34" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="820" y="158" fill="#1A1B1C">list · --dry-run</text>
+  </g>
+
+  <!-- 编排层 -->
+  <text x="30" y="222" font-size="13" font-weight="600" fill="#5B7A8E">编排层 · Orchestrator</text>
+  <rect x="30" y="234" width="880" height="60" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="13" text-anchor="middle">
+    <rect x="46" y="246" width="200" height="36" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="146" y="268" fill="#1A1B1C" font-weight="600">全局配置 config</text>
+    <rect x="260" y="246" width="200" height="36" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="360" y="268" fill="#1A1B1C" font-weight="600">模板库 TemplateLibrary</text>
+    <rect x="474" y="246" width="200" height="36" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="574" y="268" fill="#1A1B1C" font-weight="600">执行器 Runner</text>
+    <rect x="688" y="246" width="206" height="36" rx="8" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/><text x="791" y="268" fill="#1A1B1C" font-weight="600">输出器 Writer</text>
+  </g>
+  <line x1="470" y1="184" x2="470" y2="230" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="540" y1="294" x2="540" y2="338" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- 领域层：模板引擎 -->
+  <text x="30" y="356" font-size="13" font-weight="600" fill="#5B7A8E">领域层 · 模板引擎（M1 · M2）</text>
+  <rect x="30" y="368" width="880" height="118" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="12" text-anchor="middle">
+    <rect x="42" y="384" width="136" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="110" y="408" font-weight="600" font-size="13" fill="#1A1B1C">schema 校验</text>
+    <text x="110" y="428" fill="#6B7280">文件:行:列</text><text x="110" y="446" fill="#6B7280">精确报错</text>
+    <rect x="190" y="384" width="136" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="258" y="408" font-weight="600" font-size="13" fill="#1A1B1C">loader 加载</text>
+    <text x="258" y="428" fill="#6B7280">extends/field_sets</text><text x="258" y="446" fill="#6B7280">热加载·失败隔离</text>
+    <rect x="338" y="384" width="136" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="406" y="408" font-weight="600" font-size="13" fill="#1A1B1C">compiler</text>
+    <text x="406" y="428" fill="#6B7280">{{占位符}}→正则</text><text x="406" y="446" fill="#6B7280">自动转义·捕获组</text>
+    <rect x="486" y="384" width="136" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="554" y="408" font-weight="600" font-size="13" fill="#1A1B1C">matcher</text>
+    <text x="554" y="428" fill="#6B7280">first/all/fallback</text><text x="554" y="446" fill="#6B7280">regex 超时 0.1s</text>
+    <rect x="634" y="384" width="136" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="702" y="408" font-weight="600" font-size="13" fill="#1A1B1C">pipeline</text>
+    <text x="702" y="428" fill="#6B7280">trim/type/替换</text><text x="702" y="446" fill="#6B7280">默认值/单位换算</text>
+    <rect x="782" y="384" width="116" height="88" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="840" y="408" font-weight="600" font-size="13" fill="#1A1B1C">validation</text>
+    <text x="840" y="428" fill="#6B7280">required/pattern</text><text x="840" y="446" fill="#6B7280">length/enum</text>
+  </g>
+
+  <!-- 输入源（右列） -->
+  <rect x="940" y="368" width="270" height="118" rx="12" fill="#FFFFFF" stroke="#E4E3DD"/>
+  <text x="958" y="392" font-size="13" font-weight="600" fill="#1A1B1C">输入源（M3）</text>
+  <text x="958" y="414" font-size="12.5" fill="#3A4750">· stdin 管道 / 单条文本</text>
+  <text x="958" y="434" font-size="12.5" fill="#3A4750">· 单文件 / 目录递归</text>
+  <text x="958" y="454" font-size="12.5" fill="#3A4750">· 文件清单列表</text>
+  <text x="958" y="474" font-size="12.5" fill="#3A4750">· 编码自动探测+降级链</text>
+  <line x1="940" y1="440" x2="914" y2="440" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="470" y1="486" x2="470" y2="528" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- 基础设施：执行器 -->
+  <text x="30" y="548" font-size="13" font-weight="600" fill="#5B7A8E">基础设施层 · 批量执行器（M3）</text>
+  <rect x="30" y="560" width="880" height="96" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="12" text-anchor="middle">
+    <rect x="42" y="574" width="160" height="70" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="122" y="598" font-weight="600" font-size="13" fill="#1A1B1C">inputs 流式分块</text>
+    <text x="122" y="618" fill="#6B7280">1MB 块 + 行边界</text><text x="122" y="634" fill="#6B7280">>1GB 不 OOM</text>
+    <rect x="214" y="574" width="160" height="70" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="294" y="598" font-weight="600" font-size="13" fill="#1A1B1C">encoding 探测</text>
+    <text x="294" y="618" fill="#6B7280">BOM→采样探测</text><text x="294" y="634" fill="#6B7280">latin-1 兜底</text>
+    <rect x="386" y="574" width="160" height="70" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="466" y="598" font-weight="600" font-size="13" fill="#1A1B1C">workers 并发</text>
+    <text x="466" y="618" fill="#6B7280">线程池·有序输出</text><text x="466" y="634" fill="#6B7280">失败样本隔离</text>
+    <rect x="558" y="574" width="160" height="70" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="638" y="598" font-weight="600" font-size="13" fill="#1A1B1C">checkpoint</text>
+    <text x="638" y="618" fill="#6B7280">断点续跑</text><text x="638" y="634" fill="#6B7280">失败重跑</text>
+    <rect x="730" y="574" width="168" height="70" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="814" y="598" font-weight="600" font-size="13" fill="#1A1B1C">dedup 去重</text>
+    <text x="814" y="618" fill="#6B7280">字段组合 key</text><text x="814" y="634" fill="#6B7280">保留首现</text>
+  </g>
+  <line x1="470" y1="656" x2="470" y2="698" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- 基础设施：输出 -->
+  <text x="30" y="718" font-size="13" font-weight="600" fill="#5B7A8E">基础设施层 · 输出（M4）</text>
+  <rect x="30" y="730" width="880" height="78" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="12" text-anchor="middle">
+    <rect x="42" y="742" width="280" height="54" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="182" y="764" font-weight="600" font-size="13" fill="#1A1B1C">writer 导出</text>
+    <text x="182" y="784" fill="#6B7280">CSV(UTF-8 BOM) · Markdown · JSONL · 原子写</text>
+    <rect x="334" y="742" width="240" height="54" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="454" y="764" font-weight="600" font-size="13" fill="#1A1B1C">metadata 元数据</text>
+    <text x="454" y="784" fill="#6B7280">来源/行号/模板版本/耗时/置信</text>
+    <rect x="586" y="742" width="308" height="54" rx="10" fill="#FDF3E3" stroke="rgba(250,173,20,0.45)"/>
+    <text x="740" y="764" font-weight="600" font-size="13" fill="#1A1B1C">failures.jsonl 失败样本</text>
+    <text x="740" y="784" fill="#8A6D1F">坏行/乱码/超时独立落盘，支持重跑</text>
+  </g>
+
+  <!-- 输出源（右列） -->
+  <rect x="940" y="730" width="270" height="78" rx="12" fill="#FFFFFF" stroke="#E4E3DD"/>
+  <text x="958" y="754" font-size="13" font-weight="600" fill="#1A1B1C">结果可溯源</text>
+  <text x="958" y="774" font-size="12.5" fill="#3A4750">· 列序=模板字段声明序</text>
+  <text x="958" y="794" font-size="12.5" fill="#3A4750">· extra 列容纳未声明命名组</text>
+  <line x1="940" y1="766" x2="914" y2="766" stroke="#5B7A8E" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- 工作台（M5，右侧跨层） -->
+  <rect x="940" y="846" width="270" height="120" rx="12" fill="#FFFFFF" stroke="rgba(163,213,232,0.9)"/>
+  <text x="958" y="870" font-size="13" font-weight="600" fill="#1A1B1C">测试工作台（M5）</text>
+  <text x="958" y="892" font-size="12.5" fill="#3A4750">· test：字段级实时预览</text>
+  <text x="958" y="912" font-size="12.5" fill="#3A4750">· regression：正/反例命中率报告</text>
+  <text x="958" y="932" font-size="12.5" fill="#3A4750">· diff：模板修改前后结果对比</text>
+  <line x1="940" y1="900" x2="914" y2="900" stroke="#9AA7B0" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrDash)"/>
+
+  <!-- 底部支撑条 -->
+  <text x="30" y="868" font-size="13" font-weight="600" fill="#5B7A8E">工程支撑 · 非功能质量</text>
+  <rect x="30" y="880" width="880" height="86" rx="12" fill="rgba(163,213,232,0.10)" stroke="rgba(163,213,232,0.6)"/>
+  <g font-size="12.5" text-anchor="middle">
+    <rect x="42" y="894" width="202" height="58" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="143" y="916" font-weight="600" fill="#1A1B1C">lint 正则复杂度检查</text>
+    <text x="143" y="936" fill="#6B7280">嵌套量词静态告警</text>
+    <rect x="256" y="894" width="202" height="58" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="357" y="916" font-weight="600" fill="#1A1B1C">bench 性能基准</text>
+    <text x="357" y="936" fill="#6B7280">吞吐/p50-p99/峰值RSS</text>
+    <rect x="470" y="894" width="202" height="58" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="571" y="916" font-weight="600" fill="#1A1B1C">热加载 · 失败隔离</text>
+    <text x="571" y="936" fill="#6B7280">mtime 轮询 3s / 保留上一版</text>
+    <rect x="684" y="894" width="214" height="58" rx="10" fill="#FFFFFF" stroke="rgba(0,0,0,0.10)"/>
+    <text x="791" y="916" font-weight="600" fill="#1A1B1C">单元+集成测试</text>
+    <text x="791" y="936" fill="#6B7280">覆盖率 ≥80% · CI 不依赖网络</text>
+  </g>
+
+  <!-- 图例 -->
+  <g font-size="12" fill="#2F3B43">
+    <rect x="30" y="972" width="14" height="14" rx="3" fill="#A3D5E8"/><text x="52" y="984">模块</text>
+    <rect x="110" y="972" width="14" height="14" rx="3" fill="#FDF3E3" stroke="rgba(250,173,20,0.5)"/><text x="132" y="984">失败样本通道</text>
+    <line x1="250" y1="979" x2="280" y2="979" stroke="#5B7A8E" stroke-width="1.6"/><text x="290" y="984">数据流</text>
+    <line x1="360" y1="979" x2="390" y2="979" stroke="#9AA7B0" stroke-width="1.6" stroke-dasharray="5,4"/><text x="400" y="984">工作台引用关系</text>
+  </g>
+</svg>
+<p class="note">本图为设计阶段架构示意（docs/architecture.md 的可视化形式），模块名与数据流对应 v0.1.0 设计定稿；最终行为以代码与测试为准。</p>
+<div class="legend">
+  <span><i class="sw" style="background:#A3D5E8;"></i>M1 模板引擎</span>
+  <span><i class="sw" style="background:#8BC8EA;"></i>M2 模板库管理</span>
+  <span><i class="sw" style="background:#94D4D0;"></i>M3 批量执行器</span>
+  <span><i class="sw" style="background:#BDE09A;"></i>M4 输出模块</span>
+  <span><i class="sw" style="background:#E4D48F;"></i>M5 测试工作台</span>
+  <span><i class="sw" style="background:#C9A7E8;"></i>M6 CLI 与配置</span>
+</div>
+</div>
+</body>
+</html>
