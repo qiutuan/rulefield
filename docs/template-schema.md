@@ -33,7 +33,8 @@ split:                        # 仅 segment 模式
 options:
   flags: [DOTALL]             # 编译 flags：DOTALL|IGNORECASE|MULTILINE（可选）
   keep_extra: false           # 未声明命名组是否进 extra 列
-  dedup_keys: [order_no]      # 模板级去重键（可选）
+  dedup_keys: [order_no]      # 模板级去重键（可选，默认单文件内去重）
+  global_dedup: false         # true=跨文件全局去重，已见 key 集合持久化到 checkpoint（ADR-004）
   encoding_fallback: [utf-8, gb18030, latin-1]   # 模板级覆盖全局降级链
 
 # ---- 匹配方式（三选一，见 §4）----
@@ -76,7 +77,7 @@ fields:
 | `extends` | str | 否 | — | 继承基础模板引用 |
 | `mode` | enum | 否 | line | line / document / segment |
 | `split` | map | 条件 | — | segment 模式必填 |
-| `options` | map | 否 | {} | flags / keep_extra / dedup_keys / encoding_fallback |
+| `options` | map | 否 | {} | flags / keep_extra / dedup_keys / global_dedup / encoding_fallback |
 | `pattern` | map | 条件 | — | 单策略整篇模式（regex 或 placeholder） |
 | `patterns` | list | 条件 | — | 单策略字段级模式列表 |
 | `strategies` | map | 条件 | — | 多策略（mode + items） |
@@ -128,11 +129,13 @@ patterns:
 
 ### 4.4 多策略（`strategies`）
 
-| mode | 语义 |
+| mode | 语义（ADR-005） |
 | --- | --- |
-| `first_match`（默认） | 按 `items` 顺序，第一个**模式匹配成功**的策略生效；该策略的字段校验结果决定记录状态 |
-| `fallback` | 按顺序，第一个**模式匹配且全部 required+validate 通过**的策略生效；全部失败 → failed |
-| `all_match` | 所有策略都必须匹配，字段取并集；任一失败 → failed |
+| `first_match`（默认） | 按 `items` 顺序，第一个**正则命中**的策略生效；随后对该策略的字段做 pipeline/validate，按记录模型推导状态（ADR-001） |
+| `fallback` | 按顺序，第一个**正则命中且全部 required 字段 captured** 的策略被采用；字段级 pattern/length/enum/range 校验失败**不触发换策略**（属 invalid，ADR-001），仅 required 字段 **missing** 才继续尝试下一策略；全部耗尽 → failed（reason=`no_match`/`regex_timeout`） |
+| `all_match` | 所有策略都必须正则命中，字段取并集；任一未命中 → failed |
+
+> 术语：**命中** = 正则匹配成功；**采用** = 命中且该策略覆盖的 required 字段全部 captured。required 字段 captured 但 invalid（如类型转换失败）→ 按 ADR-001 该记录 failed，不换策略。
 
 典型场景：Nginx 日志两种格式（带/不带 `request_time`）→ `first_match` 按优先级尝试。
 
@@ -155,7 +158,7 @@ strategies:
 | 键 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
 | `name` | str | — | ✅ 必填，模板内唯一 |
-| `required` | bool | false | true 时该字段缺失/校验失败 → 整条记录 failed |
+| `required` | bool | false | true 时该字段 missing/invalid → 整条记录 failed 并进 failures.jsonl（ADR-001） |
 | `type` | enum | str | 简写类型转换：str/int/float/bool/date/datetime（等价于在 pipeline 末尾追加 `{op: type, to: …}`） |
 | `default` | any | — | 空值/未捕获时填充（等价于追加 `{op: default, value: …}`） |
 | `slot_regex` | str | `.+?` | 仅占位符槽位生效 |
@@ -171,7 +174,7 @@ strategies:
 | op | 参数 | 说明 | 示例 |
 | --- | --- | --- | --- |
 | `trim` | — | 去除首尾空白 | `{op: trim}` |
-| `type` | `to`（str/int/float/bool/date/datetime）；`format`（date/datetime 必填） | 类型转换；失败 → 字段 failed | `{op: type, to: float}`、`{op: type, to: datetime, format: '%Y-%m-%d %H:%M:%S'}` |
+| `type` | `to`（str/int/float/bool/date/datetime）；`format`（date/datetime 必填） | 类型转换；失败 → 字段 invalid | `{op: type, to: float}`、`{op: type, to: datetime, format: '%Y-%m-%d %H:%M:%S'}` |
 | `regex_replace` | `pattern`、`repl` | 正则替换（默认 re 非 regex 库，替换无超时风险） | `{op: regex_replace, pattern: ',', repl: ''}` |
 | `default` | `value` | 值为空/None 时填充 | `{op: default, value: 0}` |
 | `unit` | `factor`；`from`/`to`（可选，仅说明标签） | 数值×factor 换算 | `{op: unit, factor: 100}`（元→分） |
@@ -182,16 +185,16 @@ strategies:
 
 ## 7. 校验规则（`validate[].`）
 
-| type | 参数 | 语义 | 失败影响 |
+| type | 参数 | 语义 | 失败影响（ADR-001） |
 | --- | --- | --- | --- |
-| `required` | — | 字段必须存在且有值 | 整条 failed |
-| `pattern` | `value` | 对**最终值**二次正则校验 | required 字段→failed；否则字段 failed、记录 partial |
+| `required` | — | 字段必须存在且有值 | 整条记录 failed（进 failures.jsonl） |
+| `pattern` | `value` | 对**最终值**二次正则校验 | 字段 invalid；required 字段时整条 failed，否则记录 partial |
 | `length` | `min`/`max` | 字符串长度范围 | 同上 |
 | `enum` | `values` | 取值必须在枚举内 | 同上 |
 | `range` | `min`/`max` | 数值范围（int/float 值） | 同上 |
 
 - `required: true` 是 `validate: [{type: required}]` 的简写。
-- 非 required 校验失败 → 字段 failed、记录 partial、置信 partial；required 校验失败 → 记录 failed。
+- 非 required 校验失败 → 字段 invalid、记录 partial；required 字段失败 → 整条 failed 并进入 failures.jsonl。
 
 ## 8. 处理模式（`mode`）
 
